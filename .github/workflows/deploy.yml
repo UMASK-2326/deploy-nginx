@@ -30,7 +30,7 @@ jobs:
       - name: Build and push Docker image
         env:
           ECR_REGISTRY: 061051223657.dkr.ecr.ap-south-1.amazonaws.com
-          ECR_REPOSITORY: repo-1
+          ECR_REPOSITORY: myrepo
         run: |
           echo "Using IMAGE_TAG: $IMAGE_TAG"
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
