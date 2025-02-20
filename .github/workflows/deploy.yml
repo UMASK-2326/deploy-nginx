@@ -36,11 +36,22 @@ jobs:
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
+      - name: Update ECS Task Definition with new image
+        env:
+          TASK_DEFINITION_FILE: .ecs/task-definition.json
+          CONTAINER_NAME: nginx
+        run: |
+          # Fetch current task definition and update the image
+          aws ecs describe-task-definition --task-definition $TASK_FAMILY --query taskDefinition > current-task-def.json
+          jq '.taskDefinition | {family: .family, containerDefinitions: (.containerDefinitions | map(if .name == env.CONTAINER_NAME then .image = "${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:$IMAGE_TAG" else . end))}' current-task-def.json > new-task-def.json
+
+          # Register new task definition
+          TASK_DEFINITION_ARN=$(aws ecs register-task-definition --cli-input-json file://new-task-def.json --query 'taskDefinition.taskDefinitionArn' --output text)
+          echo "TASK_DEFINITION_ARN=$TASK_DEFINITION_ARN" >> $GITHUB_ENV
+
       - name: Update ECS Service
         env:
-          CLUSTER_NAME: mycluster
-          SERVICE_NAME: myservice
-          TASK_FAMILY: mytask
+          CLUSTER_NAME: cluster
+          SERVICE_NAME: service
         run: |
-          TASK_DEFINITION_ARN=$(aws ecs describe-task-definition --task-definition $TASK_FAMILY --query "taskDefinition.taskDefinitionArn" --output text)
           aws ecs update-service --cluster $CLUSTER_NAME --service $SERVICE_NAME --force-new-deployment --task-definition $TASK_DEFINITION_ARN
