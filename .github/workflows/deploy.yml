@@ -47,13 +47,15 @@ jobs:
         env:
           ECR_REGISTRY: 061051223657.dkr.ecr.ap-south-1.amazonaws.com
           ECR_REPOSITORY: myrepo
-          CONTAINER_NAME: nginx
+          CONTAINER_NAME: container
         run: |
           echo "Updating task definition JSON with new image"
           
-          # Extract only required fields and update container image
+          # Extract essential fields and update the image while keeping memory settings
           jq --arg IMAGE "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" \
-            '.containerDefinitions[0].image = $IMAGE | {family, containerDefinitions}' task-def.json > new-task-def.json
+            '.containerDefinitions[0].image = $IMAGE | 
+             .containerDefinitions[0] += {memory: 512, memoryReservation: 256} | 
+             {family, containerDefinitions}' task-def.json > new-task-def.json
 
           echo "Registering new task definition"
           TASK_DEFINITION_ARN=$(aws ecs register-task-definition --cli-input-json file://new-task-def.json --query 'taskDefinition.taskDefinitionArn' --output text)
