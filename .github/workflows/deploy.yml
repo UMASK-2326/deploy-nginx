@@ -64,7 +64,7 @@ jobs:
       - name: Update ECS Service with new Task Definition
         env:
           CLUSTER_NAME: cluster
-          SERVICE_NAME: service
+          SERVICE_NAME: myservice
         run: |
           echo "Updating ECS service $SERVICE_NAME in cluster $CLUSTER_NAME"
           aws ecs update-service --cluster $CLUSTER_NAME --service $SERVICE_NAME --force-new-deployment --task-definition $TASK_DEFINITION_ARN
